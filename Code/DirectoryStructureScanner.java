@@ -18,75 +18,305 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.io.FileInputStream;
+import java.util.Scanner;
 
 class DirectoryStructureScanner {
 
     public static void main(String[] args) {
 
+        //create the tree
         DirectoryKaryTree kary = new DirectoryKaryTree(new File("."));
-
+        //print the tree
         kary.drawTree();
 
         ArrayList < FileNode > list = kary.getFileNodes(new ArrayList < FileNode > (), kary.root);
-        
+
         System.out.println("Total Files: " + list.size() + "\n");
-        
-        
-        
-        ArrayList <boolean[][]> contentMatch = new  ArrayList <boolean[][]> ();
 
-        boolean[][] depth0 = new boolean [list.size()][list.size()];
 
-        //set of sets | matches:
-        //1 - Same content, sorted by name
-        ArrayList < ArrayList < FileNode >> matchesContent = new ArrayList < ArrayList < FileNode >> ();
+        ArrayList < ArrayList < FolderNode >> allFolderLists = new ArrayList < ArrayList < FolderNode >> ();
+        //folders with matching contents, on each height level (could be switched to 3D array)
+        ArrayList < boolean[][] > matrices = new ArrayList < boolean[][] > ();
 
-        //printArrayList(list);
-        //matrixes for comparisons
-        //boolean[][] matchingNames = new boolean[list.size()][list.size()];
-        //boolean[][] matchingCotnent = new boolean[list.size()][list.size()];
+        // debug
+        //GeneralFunctions.printArrayList(list);
 
-        //corresponds to each element in list. If a file belongs to any match, it beocmes true
-        boolean[] hasHome = new boolean[list.size()];
+        //****************** Options ******************//
+
+        String line;
+        if (args.length > 0) {
+            line = args[0].trim();
+        } else {
+            System.out.println("1. Identical sub-directories");
+            System.out.println("2. Files w/ identical content, regardless of name");
+            System.out.println("3. Files w/ identical name, grouped by identical content");
+            Scanner scanner = new Scanner(System.in); // Create a Scanner object
+            System.out.print("Enter option: ");
+            line = scanner.nextLine().trim();
+        }
+        int choice = Integer.parseInt(line);
+        System.out.println("\n");
+
+
+
+
+        //****************** Compare Files ******************//
+
+
+        boolean[][] height0 = new boolean[list.size()][list.size()]; // n x n
+
+        //corresponds to each element in list. If a file belongs to any content match, it beocmes true
+        boolean[] hasHome = new boolean[list.size()]; // n
         GeneralFunctions.resetArray(hasHome, false);
 
-        
         for (int i = 0; i < list.size() - 1; i++) {
-            //System.out.println(i + " " + list.get(i).getName());
             if (hasHome[i]) continue;
-
-            ArrayList < FileNode > match = new ArrayList < FileNode > ();
-            match.add(list.get(i));
 
             for (int j = i + 1; j < list.size(); j++) {
                 try {
+                    //debug
+                    //System.out.println("comparing " + list.get(i).meFile + " & " + list.get(j).meFile);
+
                     if (compareContent(list.get(i).meFile, list.get(j).meFile)) {
-                        match.add(list.get(j));
-                        //depth0[i][j] = true;
+                        height0[i][j] = true;
                         hasHome[i] = true;
                         hasHome[j] = true;
-                        
                     }
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
             }
-
-            if (match.size() > 1) matchesContent.add(match);
         }
 
-        //now sort each set based on name repetition. 
+        // debug
+        //GeneralFunctions.print2DArray(height0);
 
-        System.out.println("Files w/ identical content, regardless of name:\n");
-        printMatches1(matchesContent);
+        allFolderLists.add(new ArrayList < FolderNode > ()); //just a spot filler for the files list
+        matrices.add(height0);
 
-        //System.exit(0);
+        //****************** Compare Folders ******************//
 
-        ///////////////////////////lets do same name but diff content////////////////////////////////////////////////
+        //i is height level. exclude the root height       
+        for (int currHeight = 1; currHeight < kary.root.height; currHeight++) {
+
+            // debug
+
+            //System.out.println("-------------------------");
+            //System.out.println("Height " + currHeight);
 
 
-        //2 - Same name, grouped by content
-        //set of sets / sets of groups / groups are sets, so 3D arraylists. 
+            //take all FOLDER nodes at currHeight
+            ArrayList < FolderNode > currList = kary.getNodesWithHeightX(new ArrayList < FolderNode > (), currHeight, kary.root);
+            allFolderLists.add(currList);
+
+
+            // debug
+            //GeneralFunctions.printArrayList2(currList);
+
+            hasHome = new boolean[currList.size()];
+            GeneralFunctions.resetArray(hasHome, false);
+
+            //match matrix
+            boolean[][] heightx = new boolean[currList.size()][currList.size()];
+
+            for (int i = 0; i < currList.size() - 1; i++) {
+
+                if (hasHome[i]) continue;
+
+                for (int j = i + 1; j < currList.size(); j++) {
+
+                    // i is folder1, j is folder2 
+                    FolderNode folderA = currList.get(i);
+                    FolderNode folderB = currList.get(j);
+
+                    //debug
+                    //System.out.println("comparing " + folderA.meFile + " & " + folderB.meFile);
+
+                    //test 1: check number of files match
+                    boolean test1 = folderA.files.size() == folderB.files.size();
+
+
+                    //test 2: each file from folder A should correspond to a file in folder B
+                    boolean test2 = true;
+                    boolean[] correspondent = new boolean[folderB.files.size()];
+                    GeneralFunctions.resetArray(correspondent, false);
+
+                    //debug
+                    //System.out.println("correspondent.length: " + correspondent.length);
+                    //System.out.println("folderA.files.size(): " + folderA.files.size());
+
+                    for (int k = 0; k < folderA.files.size(); k++) {
+
+                        boolean fail = true;
+                        for (int l = 0; l < correspondent.length; l++) {
+                            if (!correspondent[l] && checkMatrix0(folderA.files.get(k),
+                                    folderB.files.get(l), matrices.get(0), list)) {
+                                correspondent[l] = true;
+                                fail = false;
+                                break;
+                            }
+                        }
+                        if (fail) {
+                            test2 = false;
+                            break;
+                        }
+                    }
+
+
+                    //test 3: number of child nodes (folders) should be equal
+                    boolean test3 = folderA.children.size() == folderB.children.size();
+
+                    //test 4: each child from folder A should correspond to a child in folder B
+
+                    /* to compare 2 folders...
+                       1. they should have same height (already done)
+                       2. they will have matching matrix, so find it there.
+                        //Match? reserve the 2, no Match? move onto the next.
+                     */
+                    boolean test4 = true;
+                    correspondent = new boolean[folderB.children.size()];
+                    GeneralFunctions.resetArray(correspondent, false);
+
+                    //debug
+                    //System.out.println("correspondent.length: " + correspondent.length);
+                    //System.out.println("folderA.children.size(): " + folderA.children.size());
+
+                    for (int k = 0; k < folderA.children.size(); k++) {
+
+                        boolean fail = true;
+                        for (int l = 0; l < correspondent.length; l++) {
+
+                            boolean subtest1 = !correspondent[l]; //needs to be empty(false)
+                            boolean subtest2 = (folderA.children.get(k).height == folderB.children.get(l).height);
+                            boolean subtest3 = checkMatrixX(folderA.children.get(k),
+                                folderB.children.get(l), matrices.get(folderA.children.get(k).height), allFolderLists.get(folderA.children.get(k).height));
+
+                            if (subtest1 && subtest2 && subtest3) { //match found
+                                correspondent[l] = true;
+                                fail = false;
+                                break;
+                            }
+                        }
+
+                        if (fail) { //no match found
+                            test4 = false;
+                            break;
+                        }
+                    }
+
+                    // debug
+                    // System.out.println("test 1: "+test1+"\ntest 2: "+test2+"\ntest 3: "+test3+"\ntest 4: "+test4);
+
+                    if (test1 && test2 && test3 && test4) {
+                        heightx[i][j] = true;
+                        hasHome[i] = true;
+                        hasHome[j] = true;
+                    }
+                }
+            }
+
+            // debug
+            //GeneralFunctions.print2DArray(heightx);
+
+            matrices.add(heightx);
+        }
+
+
+        // debug
+        //System.out.println("\n\n********************************");
+        //System.out.println("matrices.size(): " + matrices.size());
+        //System.out.println("allFolderLists.size(): " + allFolderLists.size());
+
+        //****************** Print Option 1 ******************//
+        if (choice == 1) {
+            for (int i = matrices.size() - 1; i > 0; i--) {
+                System.out.println("\nFolders of height " + i + " w/ identical content:");
+
+                boolean[][] height_i = matrices.get(i);
+                ArrayList < FolderNode > currList = allFolderLists.get(i);
+
+                hasHome = new boolean[currList.size()];
+                GeneralFunctions.resetArray(hasHome, false);
+
+                int numMatch = 0;
+
+                for (int j = 0; j < currList.size() - 1; j++) {
+
+                    if (hasHome[j]) continue;
+
+                    boolean aMatch = false;
+
+
+                    for (int k = j + 1; k < currList.size(); k++) {
+                        // debug
+                        /*
+                        System.out.println("list.size(): " + list.size());
+                        System.out.println("j: " + j +"\nk: " + k);
+                        System.out.println("height_i.length: " + height_i.length +"\nheight_i[j].length: " + height_i[j].length);
+                        */
+                        if (height_i[j][k] == true) {
+                            if (aMatch == false) {
+                                aMatch = true;
+                                numMatch++;
+                                System.out.println(" match " + (numMatch));
+                                System.out.println("   >>" + currList.get(j).meFile.getPath()); //print 1st one
+                            }
+                            System.out.println("   >>" + currList.get(k).meFile.getPath());
+                            hasHome[j] = true;
+                            hasHome[k] = true;
+                        }
+                    }
+                }
+            }
+        }
+
+
+        //****************** Print Option 2 ******************//
+        //print matching files content
+        if (choice == 2) {
+            hasHome = new boolean[list.size()]; // n
+            GeneralFunctions.resetArray(hasHome, false);
+            printFileContentMatch(height0, list, hasHome);
+        }
+        //****************** Compare & Print Option 3 ******************//
+        //print matching files names
+        if (choice == 3) {
+            GeneralFunctions.resetArray(hasHome, false);
+            printFileNameMatch(list, hasHome);
+        }
+
+    }
+
+
+
+    public static void printFileContentMatch(boolean[][] matrix, ArrayList < FileNode > files, boolean[] hasHome) {
+        System.out.println("\nFiles w/ identical content, regardless of name:");
+        int matchesCount = 0;
+        for (int i = 0; i < files.size(); i++) {
+            if (hasHome[i]) {
+                continue;
+            }
+            boolean matchinrow = false;
+            for (int j = 0; j < files.size(); j++) {
+                if (matrix[i][j] == true) {
+                    if (!matchinrow) {
+                        matchinrow = true;
+                        System.out.println(" match " + (matchesCount + 1));
+                        matchesCount++;
+                        System.out.println("   >>" + files.get(i).meFile.getPath());
+                        hasHome[i] = true;
+                    }
+                    System.out.println("   >>" + files.get(j).meFile.getPath());
+                    hasHome[j] = true;
+                }
+            }
+        }
+        System.out.println();
+    }
+
+
+    public static void printFileNameMatch(ArrayList < FileNode > list, boolean[] hasHome) {
+
         ArrayList < ArrayList < ArrayList < FileNode >>> matchesName = new ArrayList < ArrayList < ArrayList < FileNode >>> ();
 
         GeneralFunctions.resetArray(hasHome, false);
@@ -131,65 +361,13 @@ class DirectoryStructureScanner {
             if (!(matchName.size() == 1 && matchName.get(0).size() == 1)) D1.add(matchName);
         }
 
+        System.out.println("\nFiles w/ identical name, grouped by identical content:");
 
 
-        //System.out.println("//*********************** FINDINGS ***********************//\n");
+        for (int i = 0; i < D1.size(); i++) {
 
 
-
-
-        System.out.println("Files w/ identical name, grouped by identical content:\n");
-
-        printMatches2(D1);
-        
-        
-        /////////////////////////// NOW FOLDERS ////////////////////////////////////////////////
-        
-        //take all child nodes. 
-        //compare each one with other, not including last one
-            //check number of files match, if so, 
-            //each file from folder one should correspond to a file in folder 2
-        //Match? put them in an array and continue.
-        //you gonna end up with 2d arraylist for content matches of depth 1 folders
-        
-        //then put all folders with depth 2 in an arraylist
-        //repeat the above for files
-        // for folders, you need to find a match for each, 
-            //to compare 2 folders, first they should have same depth, then...
-            //they will have matching matrix, so find it there.
-        //Match? reserve the 2, no Match? move onto the next.
-
-    }
-
-    /*
-    public static void printArrayList(ArrayList < FileNode > list) {
-        for (FileNode element: list) {
-            System.out.println(element.getName());
-        }
-    }
-    */
-
-
-
-    public static void printMatches1(ArrayList < ArrayList < FileNode >> list) {
-        for (int i = 0; i < list.size(); i++) {
-            ArrayList < FileNode > row = list.get(i);
-            insertionSort(row);
-            System.out.println(" match " + (i + 1));
-            for (FileNode element: row) {
-                System.out.println("   >>" + element.meFile.getPath());
-            }
-            System.out.println();
-        }
-    }
-
-
-    public static void printMatches2(ArrayList < ArrayList < ArrayList < FileNode >>> list) {
-
-        for (int i = 0; i < list.size(); i++) {
-
-
-            ArrayList < ArrayList < FileNode >> names = list.get(i);
+            ArrayList < ArrayList < FileNode >> names = D1.get(i);
 
             System.out.println(" match " + (i + 1) + ": " + names.get(0).get(0).meFile.getName());
 
@@ -204,9 +382,10 @@ class DirectoryStructureScanner {
                 }
 
             }
-            
-            System.out.println();
+
+            //System.out.println();
         }
+
     }
 
     public static void insertionSort(ArrayList < FileNode > list) {
@@ -224,8 +403,8 @@ class DirectoryStructureScanner {
             list.set(j + 1, key);
         }
     }
-    
-    
+
+
     public static boolean compareContent(File f1, File f2) throws IOException {
 
         //check if they don't have same extension
@@ -249,7 +428,7 @@ class DirectoryStructureScanner {
         String filePath2 = f2.getPath();
 
         // Debug
-        //System.out.println("comparing " + filePath1 + " and " + filePath2);
+        // System.out.println("comparing " + filePath1 + " and " + filePath2);
 
         try (FileInputStream fis1 = new FileInputStream(filePath1); FileInputStream fis2 = new FileInputStream(filePath2)) {
 
@@ -306,5 +485,35 @@ class DirectoryStructureScanner {
         }
 
         return true;
+    }
+
+    public static boolean checkMatrix0(FileNode f1, FileNode f2, boolean[][] matrix, ArrayList < FileNode > list) {
+        int i1 = 0, i2 = 0;
+
+        for (int i = 0; i < list.size(); i++) {
+            if (list.get(i) == f1) {
+                i1 = i;
+            }
+            if (list.get(i) == f2) {
+                i2 = i;
+            }
+        }
+
+        return matrix[i1][i2];
+    }
+
+    public static boolean checkMatrixX(FolderNode f1, FolderNode f2, boolean[][] matrix, ArrayList < FolderNode > currList) {
+        int i1 = 0, i2 = 0;
+
+        for (int i = 0; i < currList.size(); i++) {
+            if (currList.get(i) == f1) {
+                i1 = i;
+            }
+            if (currList.get(i) == f2) {
+                i2 = i;
+            }
+        }
+
+        return matrix[i1][i2];
     }
 }

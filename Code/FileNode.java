@@ -13,4 +13,10 @@ class FileNode {
       this.meFile = meFile;
       this.home = home;
    }
+   
+   @Override
+    public String toString(){
+      //I could do path directory as well
+      return meFile.getName();
+    }
 }

@@ -15,9 +15,10 @@ import java.nio.file.StandardCopyOption;
 public class DirectoryKaryTree {
 
     //attributes
-    private FolderNode pointer;
     public FolderNode root;
-    private int horiD, vertD; //for drawing purposes
+    //for internal use, drawing purposes
+    private FolderNode pointer;
+    private int horiD, vertD;
 
     //constructor(s)
     public DirectoryKaryTree(File rootFolder) {
@@ -32,15 +33,11 @@ public class DirectoryKaryTree {
         dummyNode.addChildNode(root);
         this.root.parent = dummyNode;
         
-        //make each node know it's depth
-        setDepths(root);
-        
-        
+        //make each node know it's height
+        setHeights(root);
     }
 
     //other methods 
-    
-    
     public FolderNode buildTreeRec(File currentFolder, FolderNode parent) {
         /* at a current level */
         
@@ -61,26 +58,27 @@ public class DirectoryKaryTree {
         return now;
     }
 
-    private void setDepths(FolderNode node){
-        node.depth = nodeDepth(node);
+   //leafe node has height of 1
+    private void setHeights(FolderNode node){
+        node.height = nodeHeight(node);
         for (FolderNode child: node.children)
-            setDepths(child);
+            setHeights(child);
     }
     //count leafe, root, and everything in between.
-    private int nodeDepth(FolderNode node)
+    private int nodeHeight(FolderNode node)
     {
         if (node == null)
             return 0;
             
         else {
-            /* compute the depth of each subtree */
-            int[] depths = new int[node.children.size()];
+            /* compute the height of each subtree */
+            int[] heights = new int[node.children.size()];
             
-            for (int i = 0; i < depths.length; i++){
-               depths[i] = nodeDepth(node.children.get(i));
+            for (int i = 0; i < heights.length; i++){
+               heights[i] = nodeHeight(node.children.get(i));
             }
             
-            return GeneralFunctions.largest(depths)+1;
+            return GeneralFunctions.largest(heights)+1;
         }
     }
     
@@ -105,6 +103,7 @@ public class DirectoryKaryTree {
 
         resetNodeDrawnStatus(root);
     }
+    
     private void drawRec(FolderNode node) { //using depth-first traversal
 
         if (!node.meFile.getName().equals(".")) // skip root directory
@@ -167,9 +166,7 @@ public class DirectoryKaryTree {
         node.childrenDrawnComplete = false;
         for (FolderNode child: node.children) {
             resetNodeDrawnStatus(child);
-
         }
-
     }
     
     public ArrayList<FileNode> getFileNodes(ArrayList<FileNode> list, FolderNode node){
@@ -179,8 +176,17 @@ public class DirectoryKaryTree {
             list = getFileNodes(list, child);
         }
         return list;
-    
     }
+    
+     //return all file nodes combined
+     public ArrayList<FolderNode> getNodesWithHeightX(ArrayList<FolderNode> ret, int height, FolderNode node){
+        
+        if (node.height == height){ret.add(node);}
+        for (FolderNode child: node.children)
+            getNodesWithHeightX(ret, height, child);
+            
+        return ret;
+     }
     
 
 

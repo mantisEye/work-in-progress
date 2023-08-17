@@ -3,8 +3,6 @@
 
 import java.util.*;
 import java.io.File;
-//import java.io.IOException;
-//import java.io.FileWriter;
 
 class FolderNode {
 
@@ -13,7 +11,7 @@ class FolderNode {
     public ArrayList<FileNode> files; // files only, no directories/folders
     public ArrayList<FolderNode> children; // directories only
     public FolderNode parent;
-    public int depth;
+    public int height; // what's the diff between 'depth' and 'height'?
     public boolean childrenDrawnComplete; // for drawTree() in DirectoryKaryTree.java
 
     //constructor(s)
@@ -28,7 +26,7 @@ class FolderNode {
 
         this.children = new ArrayList<FolderNode>();
         this.parent = parent;
-        this.depth = 0;
+        this.height = 0;
         this.childrenDrawnComplete = false;
     }
     
@@ -47,5 +45,11 @@ class FolderNode {
             return children.get(children.size()-1);
          }
       return null;
+    }
+    
+    @Override
+    public String toString(){
+      //I could do path directory as well
+      return meFile.getName();
     }
 }
