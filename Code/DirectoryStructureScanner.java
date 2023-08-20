@@ -411,8 +411,8 @@ class DirectoryStructureScanner {
         if (!(f1.getName().substring(f1.getName().lastIndexOf('.') + 1).equals(f2.getName().substring(f2.getName().lastIndexOf('.') + 1))))
             return false;
 
-        //check if they are PNG, compare Pixel by Pixel
-        if (f1.getName().toLowerCase().endsWith(".png"))
+        //check if they are PNG/JPG/BMP, compare Pixel by Pixel
+        if (f1.getName().toLowerCase().endsWith(".png") || f1.getName().toLowerCase().endsWith(".jpg") || f1.getName().toLowerCase().endsWith(".bmp"))
             return comparePixelByPixel(f1, f2);
 
         //compare byte by byte
