@@ -74,13 +74,32 @@ class DirectoryStructureScanner {
 
             for (int j = i + 1; j < list.size(); j++) {
                 try {
-                    //debug
-                    //System.out.println("comparing " + list.get(i).meFile + " & " + list.get(j).meFile);
+                    // debug
+                    System.out.println("comparing " + list.get(i).meFile + " & " + list.get(j).meFile);
 
                     if (compareContent(list.get(i).meFile, list.get(j).meFile)) {
                         height0[i][j] = true;
+                        height0[j][i] = true;
                         hasHome[i] = true;
                         hasHome[j] = true;
+                        
+                        
+
+                        // debug(problem)
+                        
+                        if (list.get(i).meFile.getName().equals("mike1.txt") && list.get(j).meFile.getName().equals("mike2.txt")){
+                               System.out.println("NIGGA: mike1.txt - mike2.txt");
+                               System.out.println(i);
+                               System.out.println(j);
+                               System.out.println(height0[i][j]);
+                        }
+                        if (list.get(i).meFile.getName().equals("mike2.txt") && list.get(j).meFile.getName().equals("mike1.txt")){
+                               System.out.println("NIGGA: mike2.txt - mike1.txt");
+                               System.out.println(i);
+                               System.out.println(j);
+                               System.out.println(height0[i][j]);
+                        }
+
                     }
                 } catch (IOException e) {
                     e.printStackTrace();
@@ -94,6 +113,8 @@ class DirectoryStructureScanner {
         allFolderLists.add(new ArrayList < FolderNode > ()); //just a spot filler for the files list
         matrices.add(height0);
 
+
+        //if (1+1 == 2) {System.exit(0);}
         //****************** Compare Folders ******************//
 
         //i is height level. exclude the root height       
@@ -101,8 +122,9 @@ class DirectoryStructureScanner {
 
             // debug
 
-            //System.out.println("-------------------------");
-            //System.out.println("Height " + currHeight);
+            System.out.println("-------------------------");
+            System.out.println("Height " + currHeight);
+
 
 
             //take all FOLDER nodes at currHeight
@@ -111,7 +133,7 @@ class DirectoryStructureScanner {
 
 
             // debug
-            //GeneralFunctions.printArrayList2(currList);
+            GeneralFunctions.printArrayList2(currList);
 
             hasHome = new boolean[currList.size()];
             GeneralFunctions.resetArray(hasHome, false);
@@ -130,11 +152,10 @@ class DirectoryStructureScanner {
                     FolderNode folderB = currList.get(j);
 
                     //debug
-                    //System.out.println("comparing " + folderA.meFile + " & " + folderB.meFile);
+                    System.out.println("comparing " + folderA.meFile + " & " + folderB.meFile);
 
                     //test 1: check number of files match
                     boolean test1 = folderA.files.size() == folderB.files.size();
-
 
                     //test 2: each file from folder A should correspond to a file in folder B
                     boolean test2 = true;
@@ -142,21 +163,37 @@ class DirectoryStructureScanner {
                     GeneralFunctions.resetArray(correspondent, false);
 
                     //debug
-                    //System.out.println("correspondent.length: " + correspondent.length);
-                    //System.out.println("folderA.files.size(): " + folderA.files.size());
+                    System.out.println("correspondent.length: " + correspondent.length);
+                    System.out.println("folderA.files.size(): " + folderA.files.size());
 
                     for (int k = 0; k < folderA.files.size(); k++) {
 
                         boolean fail = true;
                         for (int l = 0; l < correspondent.length; l++) {
-                            if (!correspondent[l] && checkMatrix0(folderA.files.get(k),
+                            if (folderA.meFile.getName().equals("bbbab") && folderB.meFile.getName().equals("bbbab")) {
+                                System.out.println("k: " + k + ", l: " + l);
+                                System.out.println(folderA.files.get(k).meFile.getName());
+                                System.out.println(folderB.files.get(l).meFile.getName());
+                                System.out.println(!correspondent[l]);
+                                System.out.println(checkMatrix0(folderA.files.get(k),
+                                    folderB.files.get(l), matrices.get(0), list));
+            if (correspondent[l] == false && checkMatrix0(folderA.files.get(k),
+                                    folderB.files.get(l), matrices.get(0), list))
+                                    
+                                System.out.println("therefore, match");
+                            }
+                            if (correspondent[l] == false && checkMatrix0(folderA.files.get(k),
                                     folderB.files.get(l), matrices.get(0), list)) {
+
                                 correspondent[l] = true;
                                 fail = false;
                                 break;
                             }
                         }
                         if (fail) {
+                            if (folderA.meFile.getName().equals("bbbab") && folderB.meFile.getName().equals("bbbab")) {
+                                System.out.println("fail");
+                            }
                             test2 = false;
                             break;
                         }
@@ -178,8 +215,9 @@ class DirectoryStructureScanner {
                     GeneralFunctions.resetArray(correspondent, false);
 
                     //debug
-                    //System.out.println("correspondent.length: " + correspondent.length);
-                    //System.out.println("folderA.children.size(): " + folderA.children.size());
+
+                    System.out.println("correspondent.length: " + correspondent.length);
+                    System.out.println("folderA.children.size(): " + folderA.children.size());
 
                     for (int k = 0; k < folderA.children.size(); k++) {
 
@@ -205,10 +243,13 @@ class DirectoryStructureScanner {
                     }
 
                     // debug
-                    // System.out.println("test 1: "+test1+"\ntest 2: "+test2+"\ntest 3: "+test3+"\ntest 4: "+test4);
+                    System.out.println("test 1: " + test1 + "\ntest 2: " + test2 + "\ntest 3: " + test3 + "\ntest 4: " + test4);
+
+
 
                     if (test1 && test2 && test3 && test4) {
                         heightx[i][j] = true;
+                        heightx[j][i] = true;
                         hasHome[i] = true;
                         hasHome[j] = true;
                     }
@@ -281,8 +322,7 @@ class DirectoryStructureScanner {
         //****************** Compare & Print Option 3 ******************//
         //print matching files names
         if (choice == 3) {
-            GeneralFunctions.resetArray(hasHome, false);
-            printFileNameMatch(list, hasHome);
+            printFileNameMatch(list);
         }
 
     }
@@ -315,10 +355,11 @@ class DirectoryStructureScanner {
     }
 
 
-    public static void printFileNameMatch(ArrayList < FileNode > list, boolean[] hasHome) {
+    public static void printFileNameMatch(ArrayList < FileNode > list) {
 
         ArrayList < ArrayList < ArrayList < FileNode >>> matchesName = new ArrayList < ArrayList < ArrayList < FileNode >>> ();
 
+        boolean[] hasHome = new boolean[list.size()];
         GeneralFunctions.resetArray(hasHome, false);
 
         ArrayList < ArrayList < ArrayList < FileNode >>> D1 = new ArrayList < ArrayList < ArrayList < FileNode >>> ();
@@ -490,6 +531,8 @@ class DirectoryStructureScanner {
     public static boolean checkMatrix0(FileNode f1, FileNode f2, boolean[][] matrix, ArrayList < FileNode > list) {
         int i1 = 0, i2 = 0;
 
+        
+        //find their indexes in list<>
         for (int i = 0; i < list.size(); i++) {
             if (list.get(i) == f1) {
                 i1 = i;
@@ -499,7 +542,35 @@ class DirectoryStructureScanner {
             }
         }
 
-        return matrix[i1][i2];
+        // debug(problem)
+                        if (f1.meFile.getName().equals("mike1.txt") && f2.meFile.getName().equals("mike2.txt")){
+                               System.out.println("mike1.txt - mike2.txt");
+                               System.out.println(i1);
+                               System.out.println(i2);
+                             
+                        }
+                        if (f1.meFile.getName().equals("mike2.txt") && f2.meFile.getName().equals("mike1.txt")){
+                               System.out.println("mike2.txt - mike1.txt");
+                               System.out.println(i1);
+                               System.out.println(i2);
+                            
+                        }
+
+
+        if (matrix[i1][i2] || matrix[i2][i1]) {return true;}
+        
+        /* They may be connected indirectly via an alliance
+If they are not directly connect, then, go through each match from file1, and see if THAT match matches with file2.
+One of those matches must be the master that sent the rest home.
+ */         
+         for (int i = 0; i < list.size(); i++) {
+              if (matrix[i1][i] && matrix[i][i2]){
+                  return true;
+              }
+         }
+         
+         return false;
+
     }
 
     public static boolean checkMatrixX(FolderNode f1, FolderNode f2, boolean[][] matrix, ArrayList < FolderNode > currList) {
@@ -514,6 +585,14 @@ class DirectoryStructureScanner {
             }
         }
 
-        return matrix[i1][i2];
+        if (matrix[i1][i2] || matrix[i2][i1]) {return true;}
+        
+          for (int i = 0; i < currList.size(); i++) {
+              if (matrix[i1][i] && matrix[i][i2]){
+                  return true;
+              }
+         }
+         
+         return false;
     }
 }
