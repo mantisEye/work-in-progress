@@ -26,6 +26,8 @@ public class DirectoryKaryTree {
         this.horiD = 0;
         this.vertD = 0;
         this.pointer = null;
+        
+        //build the k-ary tree, recusrvily, depth-first-traversal. 
         this.root = buildTreeRec(rootFolder, null);
 
         //useless dummy node, just so that root has a parent, needed for drawTree()      
